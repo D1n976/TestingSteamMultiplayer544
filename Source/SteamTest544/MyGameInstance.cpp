@@ -26,8 +26,8 @@ void UMyGameInstance::CreateSession()
 		SessionSettings.bUsesPresence = true;
 		SessionSettings.bShouldAdvertise = true;
 		SessionSettings.bUseLobbiesIfAvailable = true;
+		SessionSettings.bAllowJoinInProgress = true;
 		SessionSettings.Set(FName("VOVA"), FString("TRUE"), EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
-		
 		onlineSession->CreateSession(*GetWorld()->GetFirstLocalPlayerFromController()->GetPreferredUniqueNetId(),
 									 NAME_GameSession, SessionSettings);
 	}
@@ -38,7 +38,7 @@ void UMyGameInstance::FindSession()
 	if (OnlineSessionPtr.IsValid())
 	{
 		OnlineSessionSearch->bIsLanQuery = false;
-		OnlineSessionSearch->MaxSearchResults = 1000;
+		OnlineSessionSearch->MaxSearchResults = 10000;
 		OnlineSessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
 		OnlineSessionPtr->FindSessions(*GetWorld()->GetFirstLocalPlayerFromController()->GetPreferredUniqueNetId(),
 									   OnlineSessionSearch.ToSharedRef());
@@ -48,13 +48,6 @@ void UMyGameInstance::FindSession()
 void UMyGameInstance::OnSessionInviteAccepted(const bool bWasSuccessful, const int32 ControllerId,
                                               FUniqueNetIdPtr UserId, const FOnlineSessionSearchResult& InviteResult)
 {
-	FString sessionId = InviteResult.GetSessionIdStr();
-	FString userName = InviteResult.Session.OwningUserName;
-	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Emerald,
-									 FString::Printf(
-										 TEXT("ControllerId = %d, UserId = %s, sessionId = %s, host_name = %s"), ControllerId,
-										 *UserId.Get()->ToString(), *sessionId, *userName));
-	
 	OnlineSessionPtr->JoinSession(ControllerId, NAME_GameSession, InviteResult);
 }
 
@@ -97,6 +90,10 @@ void UMyGameInstance::OnSessionFound(bool IsWasFound)
 
 void UMyGameInstance::OnJoinSession(FName SessionName, EOnJoinSessionCompleteResult::Type SessionResult)
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Emerald,
+									 FString::Printf(
+										 TEXT("%s"),
+										 *SessionName.ToString()));
 	if (SessionResult == EOnJoinSessionCompleteResult::Success)
 	{
 		if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
